@@ -17,6 +17,7 @@
         <java.version>17</java.version>
         <rest-assured.version>5.5.7</rest-assured.version>
         <allure.version>2.35.3</allure.version>
+        <groovy.version>4.0.22</groovy.version>
     </properties>
 
     <dependencyManagement>
