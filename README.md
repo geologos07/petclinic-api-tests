@@ -74,11 +74,7 @@ mvn clean test -DbaseUrl=http://localhost:9966/petclinic
 
 Параметр `baseUrl` можно не указывать: такое же значение задано по умолчанию в `src/test/resources/application.properties`.
 
-Полный прогон сейчас завершается `BUILD FAILURE`, потому что активные тесты фиксируют расхождения `PetBug-1..3`. Обязательная часть ТЗ проходит отдельно:
-
-```bash
-mvn clean test -Dtest=HealthApiTests,OwnerCrudTests,OwnerValidationTests -DbaseUrl=http://localhost:9966/petclinic
-```
+Полный прогон завершается `BUILD FAILURE` ожидаемо: автотесты выявили реальные дефекты в API и показывают их в результатах прогона. Найденные расхождения описаны ниже как `PetBug-1..3`; соответствующие тесты намеренно оставлены активными.
 
 Если Maven запускается из Windows PowerShell, используйте:
 
