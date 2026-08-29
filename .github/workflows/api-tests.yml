@@ -1,0 +1,61 @@
+name: API tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  api-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout tests
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Start Spring PetClinic REST
+        run: docker run --detach --name spring-petclinic-rest --publish 9966:9966 springcommunity/spring-petclinic-rest
+
+      - name: Wait for Spring PetClinic REST
+        shell: bash
+        run: |
+          for attempt in {1..60}; do
+            if curl --fail --silent http://localhost:9966/petclinic/actuator/health | grep -q '"status":"UP"'; then
+              exit 0
+            fi
+            sleep 2
+          done
+
+          docker logs spring-petclinic-rest
+          exit 1
+
+      - name: Run API tests
+        run: ./mvnw --batch-mode clean test -DbaseUrl=http://localhost:9966/petclinic
+
+      - name: Generate Allure report
+        if: ${{ always() }}
+        run: ./mvnw --batch-mode allure:report
+
+      - name: Upload test reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-test-reports
+          path: |
+            target/surefire-reports
+            target/allure-results
+            target/site/allure-maven-plugin
+          if-no-files-found: warn
+
+      - name: Stop Spring PetClinic REST
+        if: ${{ always() }}
+        run: docker rm --force spring-petclinic-rest
