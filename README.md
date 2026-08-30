@@ -98,13 +98,27 @@ Workflow [`.github/workflows/api-tests.yml`](.github/workflows/api-tests.yml) з
 mvn allure:report
 ```
 
-Откройте файл:
+Не открывайте `index.html` напрямую через `file://`: Chrome и Opera могут заблокировать загрузку внутренних файлов отчёта.
 
-```text
-target/site/allure-maven-plugin/index.html
+Для Windows PowerShell запустите временный локальный сервер:
+
+```powershell
+npx.cmd --yes http-server ".\target\site\allure-maven-plugin" -p 8000
 ```
 
-Либо запустите временный локальный сервер:
+Для WSL2/Linux:
+
+```bash
+npx --yes http-server ./target/site/allure-maven-plugin -p 8000
+```
+
+После запуска откройте в браузере:
+
+```text
+http://localhost:8000
+```
+
+Также можно использовать встроенный сервер Maven:
 
 ```bash
 mvn allure:serve
