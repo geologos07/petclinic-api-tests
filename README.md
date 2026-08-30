@@ -4,142 +4,107 @@
 
 ## Требования
 
-- Java 17 или выше. В `pom.xml` задан `java.version=17`; проект проверен на Java 21.0.12.
-- Maven 3.9 или выше. Проект проверен на Maven 3.9.16.
-- Git.
-- Docker Desktop с включённой интеграцией WSL2 или Docker Engine в WSL2 — если PetClinic запускается в контейнере.
+- Java 17 или выше;
+- Maven 3.9 или выше;
+- Docker;
+- Node.js и npm — для просмотра Allure-отчёта через локальный сервер.
 
-Gradle в проекте не используется.
+Проект проверен на Java 21 и Maven 3.9.16.
 
 ## Запуск Spring PetClinic REST
 
-### Вариант 1. Docker
-
-В Ubuntu/WSL2 выполните:
+Запуск через Docker:
 
 ```bash
 docker pull springcommunity/spring-petclinic-rest
 docker run --rm --name spring-petclinic-rest -p 9966:9966 springcommunity/spring-petclinic-rest
 ```
 
-Оставьте этот терминал запущенным. Приложение будет доступно по адресу:
+После запуска приложение доступно по адресам:
 
 - Swagger UI: http://localhost:9966/petclinic/swagger-ui/index.html
-- OpenAPI: http://localhost:9966/petclinic/v3/api-docs
 - Health check: http://localhost:9966/petclinic/actuator/health
 
-Проверить доступность из WSL2 можно командой:
-
-```bash
-curl http://localhost:9966/petclinic/actuator/health
-```
-
-Остановить контейнер после завершения работы:
+Остановка контейнера:
 
 ```bash
 docker stop spring-petclinic-rest
 ```
 
-### Вариант 2. Запуск из исходников PetClinic
+## Запуск тестов
 
-```bash
-git clone https://github.com/spring-petclinic/spring-petclinic-rest.git
-cd spring-petclinic-rest
-./mvnw spring-boot:run
+Рабочий каталог:
+
+```text
+petclinic-api-tests
 ```
 
-Официальный проект использует встроенную H2-базу данных, поэтому отдельная база для стандартного запуска не требуется.
-
-## Запуск автотестов
-
-Перейдите в каталог этого проекта:
-
-```bash
-cd "/path/to/petclinic-api-tests"
-```
-
-Замените `/path/to` на фактический путь к проекту. Для WSL2 Windows-диск `D:` доступен через `/mnt/d`.
-
-Например:
-
-```bash
-cd "/mnt/d/<ваша-папка>/petclinic-api-tests"
-```
-
-Запустите тесты:
-
-```bash
-mvn clean test -DbaseUrl=http://localhost:9966/petclinic
-```
-
-Параметр `baseUrl` можно не указывать: такое же значение задано по умолчанию в `src/test/resources/application.properties`.
-
-Полный прогон завершается `BUILD FAILURE` ожидаемо: автотесты выявили реальные дефекты в API и показывают их в результатах прогона. Найденные расхождения описаны ниже как `PetBug-1..3`; соответствующие тесты намеренно оставлены активными.
-
-Если Maven запускается из Windows PowerShell, используйте:
+Windows PowerShell:
 
 ```powershell
 .\mvnw.cmd clean test -DbaseUrl=http://localhost:9966/petclinic
 ```
 
-Тесты создают временных владельцев со случайными данными и удаляют их после сценария. Перед запуском PetClinic должен быть доступен по `baseUrl`.
+WSL2/Linux:
 
-## Continuous Integration
+```bash
+./mvnw clean test -DbaseUrl=http://localhost:9966/petclinic
+```
 
-Workflow [`.github/workflows/api-tests.yml`](.github/workflows/api-tests.yml) запускается для `push` и `pull_request`. Он устанавливает Java 17, поднимает Spring PetClinic REST в Docker, ждёт доступности health-check, запускает тесты и сохраняет Surefire и Allure-отчёты как артефакты GitHub Actions.
+Полный прогон завершается с `BUILD FAILURE`, поскольку тесты выявляют реальные дефекты в API. Соответствующие тесты остаются активными и отображаются в результатах прогона и Allure-отчёте.
 
-Поскольку тесты известных дефектов пока остаются активными, CI будет показывать failed job до исправления `PetBug-1..3` в тестируемом приложении.
+## Allure
 
-## Allure-отчёт
-
-После выполнения тестов сформируйте HTML-отчёт:
+Формирование отчёта:
 
 ```bash
 mvn allure:report
 ```
 
-Не открывайте `index.html` напрямую через `file://`: Chrome и Opera могут заблокировать загрузку внутренних файлов отчёта.
-
-Для Windows PowerShell запустите временный локальный сервер:
+Windows PowerShell:
 
 ```powershell
 npx.cmd --yes http-server ".\target\site\allure-maven-plugin" -p 8000
 ```
 
-Для WSL2/Linux:
+WSL2/Linux:
 
 ```bash
 npx --yes http-server ./target/site/allure-maven-plugin -p 8000
 ```
 
-После запуска откройте в браузере:
+Отчёт доступен по адресу:
 
 ```text
 http://localhost:8000
 ```
 
-Также можно использовать встроенный сервер Maven:
+Открытие `index.html` через `file://` может привести к блокировке загрузки данных браузером.
 
-```bash
-mvn allure:serve
+Результаты тестов сохраняются в:
+
+```text
+target/allure-results
 ```
 
-Результаты тестов сохраняются в `target/allure-results`. В отчёт также добавляются HTTP-запросы и ответы.
+## GitHub Actions
 
-## Дополнительные настройки
+Workflow [`.github/workflows/api-tests.yml`](.github/workflows/api-tests.yml) запускается для `push` и `pull_request`.
 
-- URL приложения переопределяется параметром `-DbaseUrl=...`.
-- В `baseUrl` должен присутствовать контекст приложения `/petclinic`.
-- Текущий проект ожидает, что PetClinic уже запущен отдельно и доступен по указанному `baseUrl`.
-- Тесты используют REST-клиенты из `src/main/java`, DTO находятся в `dto`, а общие проверки — в `src/test/java/.../assertion`.
+В рамках workflow:
 
-## Найденные расхождения API
+- запускается Spring PetClinic REST в Docker;
+- выполняются API-тесты;
+- формируются Surefire- и Allure-отчёты;
+- отчёты сохраняются как артефакты GitHub Actions.
 
-Падающие тесты оставлены активными, чтобы они фиксировали дефекты, а не скрывали их. Для каждого сценария добавлены JUnit 5 `@Tag` и Allure `@Issue`.
+## Найденные проблемы API
 
-| Идентификатор | Суть | Тест |
+| ID | Проблема | Тест |
 |---|---|---|
-| `PetBug-1` | Второй владелец с уже занятым номером телефона создаётся с HTTP `201`. Ожидается отклонение `400` или `409`. | [`OwnerDuplicateTests.duplicateTelephoneShouldBeRejected()`](src/test/java/com/example/petclinicapitests/OwnerDuplicateTests.java#L26) |
-| `PetBug-2` | Для отрицательного `ownerId` API возвращает HTTP `500`, хотя Swagger описывает `400`. | [`getOwnerWithNegativeIdShouldReturnBadRequest()`](src/test/java/com/example/petclinicapitests/OwnerIdValidationTests.java#L30), [`updateOwnerWithNegativeIdShouldReturnBadRequest()`](src/test/java/com/example/petclinicapitests/OwnerIdValidationTests.java#L46), [`deleteOwnerWithNegativeIdShouldReturnBadRequest()`](src/test/java/com/example/petclinicapitests/OwnerIdValidationTests.java#L68) |
-| `PetBug-3` | Для невалидных параметров пагинации (`page=-1`, `size=0`, `size=101`) API возвращает HTTP `500`, хотя Swagger описывает `400`. | [`OwnerPaginationTests.listOwnersPageShouldRejectInvalidPagination()`](src/test/java/com/example/petclinicapitests/OwnerPaginationTests.java#L44) |
-| `PetBug-4` | Swagger указывает `200` для `PUT`/`DELETE` владельца, а фактический API возвращает `204`. CRUD-тест учитывает фактический успешный ответ и проверяет состояние ресурса. | [`OwnerCrudTests.ownerCrudFlow()`](src/test/java/com/example/petclinicapitests/OwnerCrudTests.java#L24) |
+| `PetBug-1` | Можно создать двух владельцев с одним номером телефона. API возвращает `201` вместо `400/409`. | [`OwnerDuplicateTests`](src/test/java/com/example/petclinicapitests/OwnerDuplicateTests.java) |
+| `PetBug-2` | Для отрицательного `ownerId` API возвращает `500` вместо `400`. | [`OwnerIdValidationTests`](src/test/java/com/example/petclinicapitests/OwnerIdValidationTests.java) |
+| `PetBug-3` | Невалидные параметры пагинации приводят к `500` вместо `400`. | [`OwnerPaginationTests`](src/test/java/com/example/petclinicapitests/OwnerPaginationTests.java) |
+| `PetBug-4` | В Swagger для PUT/DELETE указан `200`, а фактически API возвращает `204`. | [`OwnerCrudTests`](src/test/java/com/example/petclinicapitests/OwnerCrudTests.java) |
+
+Клиенты и DTO находятся в `src/main/java`, тесты — в `src/test/java`.
